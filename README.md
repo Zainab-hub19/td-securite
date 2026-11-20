@@ -105,3 +105,11 @@ Règles à faire respecter **côté serveur** :
 - Répondre `404` plutôt que `403` sur le compte d'un autre : pourquoi ?
 - Pourquoi BCrypt plutôt que SHA-256 ? Quel est son coût à chaque requête en Basic Auth ?
 - Que faudrait-il changer pour passer en JWT ou en session ?
+
+
+Partie réponse : 
+1.L'API ça renvoie HTTP/1.1 401 avec l'en-tête WWW-Authenticate: Basic realm="Realm" pour toute requête non authentifiée. Par défaut, Spring Security verrouille tous les endpoints de l'application et génère un utilisateur temporaire user avec un mot de passe aléatoire affiché dans les logs au démarrage.
+
+5.Non. `echo YWxpY2U6YWxpY2UxMjM= | base64 -d` donne `alice:alice123`. Le base64 est un *encodage* (réversible par n'importe qui, sans clé), pas du chiffrement. Basic Auth n'est acceptable que sur HTTPS, qui chiffre alors tout le canal.
+
+Une attaque CSRF repose sur le fait que le navigateur joint automatiquement les cookies (donc la session) aux requêtes vers un site, même déclenchées depuis un autre site. Ici l'API est stateless : pas de session, pas de cookie d'authentification. Le navigateur n'ajoute jamais `Authorization` tout seul, c'est le code Angular qui le fait. Un site malveillant ne peut donc pas faire agir l'utilisateur à sa place, et la protection CSRF n'apporte rien : on la désactive. Si on passait aux sessions avec cookie, il faudrait la réactiver.

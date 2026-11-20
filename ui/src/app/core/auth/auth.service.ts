@@ -1,28 +1,37 @@
-import { Injectable, signal } from '@angular/core';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { inject, Injectable, signal } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 
 export interface Utilisateur {
   readonly login: string;
   readonly roles: readonly string[];
 }
 
-/**
- * Garde l'utilisateur connecté. Squelette du TD : à compléter en partie 2.
- */
 @Injectable({ providedIn: 'root' })
 export class AuthService {
+  private readonly http = inject(HttpClient);
+  private jetonBasic: string | null = null;
+
   readonly utilisateur = signal<Utilisateur | null>(null);
 
-  /**
-   * Vérifie les identifiants auprès du serveur (GET /api/me avec l'en-tête
-   * Basic) et mémorise l'utilisateur. Doit échouer (throw) si le serveur répond 401.
-   */
+  get autorisation(): string | null {
+    return this.jetonBasic;
+  }
+
   async connecter(login: string, motDePasse: string): Promise<void> {
-    // TODO : appeler /api/me, retenir les identifiants pour l'intercepteur,
-    // puis renseigner `utilisateur`.
-    throw new Error('Pas encore implémenté');
+    const header = 'Basic ' + btoa(`${login}:${motDePasse}`);
+    const headers = new HttpHeaders({ Authorization: header });
+
+    const profil = await firstValueFrom(
+      this.http.get<Utilisateur>('http://localhost:8080/api/me', { headers }),
+    );
+
+    this.jetonBasic = header;
+    this.utilisateur.set(profil);
   }
 
   deconnecter(): void {
-    // TODO : oublier les identifiants et l'utilisateur.
+    this.jetonBasic = null;
+    this.utilisateur.set(null);
   }
 }
